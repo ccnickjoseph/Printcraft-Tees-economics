@@ -1,0 +1,584 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>CFT Unit Economics</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --graphite:#23262C; --panel:#2A2E35; --panel2:#31363E; --rule:#3D434C;
+  --cornsilk:#EDE5CE; --ice:#9AA2AE; --jade:#55AC8E; --red:#C9584F;
+  --blue:#6E9CC9; --sand:#C9B78E; --choc:#A66B3F; --maroon:#8E4A52;
+}
+html,body{background:var(--graphite);}
+body{
+  background:repeating-linear-gradient(45deg,rgba(255,255,255,.014) 0 1px,transparent 1px 3px),var(--graphite);
+  color:var(--cornsilk);
+  font-family:'Inter',system-ui,-apple-system,sans-serif;
+  padding:22px;min-height:100vh;
+}
+.lbl{font-family:'Barlow Condensed','Arial Narrow',sans-serif;text-transform:uppercase;
+  letter-spacing:.14em;font-weight:600;color:var(--ice);font-size:11px;line-height:1.3;display:block;}
+.num{font-family:'IBM Plex Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums;}
+.tag{border:1px solid var(--rule);border-radius:3px;padding:14px 18px 13px 34px;position:relative;background:var(--panel);}
+.tag:before{content:"";position:absolute;left:14px;top:50%;width:9px;height:9px;margin-top:-4.5px;
+  border-radius:50%;border:1px solid var(--rule);}
+.tagline{font-family:'Barlow Condensed','Arial Narrow',sans-serif;text-transform:uppercase;
+  letter-spacing:.2em;font-size:23px;font-weight:700;color:var(--cornsilk);line-height:1;}
+.tagsub{font-family:'Barlow Condensed','Arial Narrow',sans-serif;text-transform:uppercase;
+  letter-spacing:.16em;font-size:11px;color:var(--ice);margin-top:6px;}
+.panel{background:var(--panel);border:1px solid var(--rule);border-radius:3px;padding:16px;}
+.grid{display:grid;grid-template-columns:280px 1fr;gap:14px;margin-top:14px;align-items:start;}
+@media(max-width:940px){.grid{grid-template-columns:1fr;}}
+.field{margin-bottom:11px;}
+input[type=number],input[type=text],textarea{width:100%;background:var(--panel2);border:1px solid var(--rule);
+  color:var(--cornsilk);border-radius:2px;padding:6px 8px;font-family:'IBM Plex Mono',monospace;
+  font-size:13px;font-variant-numeric:tabular-nums;}
+input:focus,textarea:focus{outline:2px solid var(--blue);outline-offset:1px;}
+input:disabled{opacity:.42;cursor:not-allowed;}
+input[type=range]{width:100%;accent-color:var(--blue);padding:0;background:none;border:none;}
+.chanrow{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:4px;}
+.chip{background:var(--panel2);border:1px solid var(--rule);color:var(--ice);border-radius:2px;
+  padding:7px 4px;cursor:pointer;font-family:'Barlow Condensed','Arial Narrow',sans-serif;
+  text-transform:uppercase;letter-spacing:.1em;font-size:11px;font-weight:600;}
+.chip:hover{border-color:var(--blue);}
+.chip[aria-pressed=true]{background:var(--blue);border-color:var(--blue);color:#16202B;}
+.chip:focus-visible{outline:2px solid var(--cornsilk);outline-offset:1px;}
+.linkbtn{background:none;border:none;color:var(--blue);font-size:11px;padding:4px 0 0;cursor:pointer;
+  font-family:'Inter',sans-serif;}
+.stackrow{display:grid;grid-template-columns:60px 1fr 100px;gap:10px;align-items:center;
+  margin-bottom:7px;cursor:pointer;}
+.stackrow:hover .bar{filter:brightness(1.14);}
+.bar{display:flex;height:26px;border-radius:2px;overflow:hidden;background:var(--panel2);}
+.seg{height:100%;}
+@media (prefers-reduced-motion:no-preference){.seg{transition:width .22s ease;}}
+.qtag{font-family:'Barlow Condensed','Arial Narrow',sans-serif;font-weight:700;font-size:15px;
+  letter-spacing:.06em;text-align:right;color:var(--ice);}
+.qtag.on{color:var(--cornsilk);}
+table{width:100%;border-collapse:collapse;font-size:12.5px;}
+th{font-family:'Barlow Condensed','Arial Narrow',sans-serif;text-transform:uppercase;letter-spacing:.11em;
+  font-size:10.5px;color:var(--ice);font-weight:600;text-align:right;padding:6px 7px;
+  border-bottom:1px solid var(--rule);white-space:nowrap;}
+th:first-child{text-align:left;}
+td{padding:6px 7px;text-align:right;border-bottom:1px solid rgba(61,67,76,.45);
+  font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;white-space:nowrap;}
+td:first-child{text-align:left;}
+tbody tr{cursor:pointer;}
+tbody tr.sel td{background:rgba(110,156,201,.09);}
+.badge{font-family:'Barlow Condensed','Arial Narrow',sans-serif;text-transform:uppercase;
+  letter-spacing:.1em;font-size:10px;font-weight:700;padding:2px 6px;border-radius:2px;margin-left:7px;}
+.badge.free{background:rgba(201,88,79,.16);color:#D9827A;border:1px solid rgba(201,88,79,.42);}
+.badge.paid{background:rgba(85,172,142,.15);color:#6FBFA2;border:1px solid rgba(85,172,142,.42);}
+.legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;}
+.lgi{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--ice);}
+.sw{width:10px;height:10px;border-radius:2px;}
+.hero{display:flex;gap:26px;flex-wrap:wrap;align-items:flex-end;padding-bottom:14px;
+  border-bottom:1px solid var(--rule);margin-bottom:16px;}
+.big{font-family:'IBM Plex Mono',monospace;font-size:36px;font-weight:600;line-height:1;
+  font-variant-numeric:tabular-nums;margin-top:7px;}
+.mid{font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:500;line-height:1;
+  font-variant-numeric:tabular-nums;color:var(--cornsilk);margin-top:9px;}
+.warn{border-left:2px solid var(--red);background:rgba(201,88,79,.09);padding:9px 12px;
+  font-size:12.5px;margin-top:12px;line-height:1.5;}
+.good{border-left:2px solid var(--jade);background:rgba(85,172,142,.09);padding:9px 12px;
+  font-size:12.5px;margin-top:12px;line-height:1.5;}
+.scan{display:grid;grid-template-columns:repeat(8,1fr);gap:5px;margin-top:10px;}
+@media(max-width:760px){.scan{grid-template-columns:repeat(4,1fr);}}
+.scancell{border:1px solid var(--rule);border-radius:2px;padding:8px 5px;text-align:center;background:var(--panel2);}
+.scancell.pass{border-color:var(--jade);background:rgba(85,172,142,.12);}
+.scancell.first{outline:2px solid var(--jade);outline-offset:1px;}
+.foot{font-size:11.5px;color:var(--ice);line-height:1.65;margin-top:14px;}
+.sect{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px;gap:12px;flex-wrap:wrap;}
+.note{font-size:11.5px;color:var(--ice);line-height:1.6;}
+.diff{font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.9;}
+.diff .from{color:#7C8695;}
+.diff .to{color:var(--cornsilk);}
+.snapbtns{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0;}
+.hr{height:1px;background:var(--rule);margin:16px 0;}
+.scroll{overflow-x:auto;}
+</style>
+</head>
+<body>
+
+<div class="tag">
+  <div class="tagline">Unit Economics</div>
+  <div class="tagsub">Casual Friday Tees &middot; Gildan G64000 &middot; DTG by Printful &middot; made to order</div>
+</div>
+
+<div class="grid">
+
+  <!-- ================= CONTROLS ================= -->
+  <div class="panel">
+    <span class="lbl" style="margin-bottom:10px">Sales channel</span>
+    <div class="chanrow" id="chanBtns"></div>
+    <div class="note" id="chanNote" style="margin:8px 0 16px"></div>
+
+    <div class="field">
+      <label class="lbl" for="feeRate">Channel fee %</label>
+      <input type="number" step="0.05" id="feeRate">
+      <button class="linkbtn" id="feeReset" hidden>Reset to default</button>
+      <div class="note" id="feeAuto" style="margin-top:4px" hidden>Auto-tiered from unit price</div>
+    </div>
+
+    <span class="lbl" style="margin:16px 0 9px">Price and cost</span>
+    <div class="field"><label class="lbl" for="price">Retail price per tee</label>
+      <input type="number" step="0.5" id="price"></div>
+    <div class="field"><label class="lbl" for="cost">Printful product cost</label>
+      <input type="number" step="0.25" id="cost"></div>
+    <div class="field"><label class="lbl" for="sf">Ship: first item</label>
+      <input type="number" step="0.05" id="sf"></div>
+    <div class="field"><label class="lbl" for="sa">Ship: each additional</label>
+      <input type="number" step="0.05" id="sa"></div>
+
+    <span class="lbl" style="margin:16px 0 9px">Shipping policy</span>
+    <div class="field"><label class="lbl" for="th">Free shipping over ($)</label>
+      <input type="number" step="5" id="th"></div>
+    <div class="field"><label class="lbl" for="sc">Shipping charged below it</label>
+      <input type="number" step="0.5" id="sc"></div>
+
+    <span class="lbl" style="margin:16px 0 9px">Affiliate / creator payout</span>
+    <div class="field">
+      <label class="lbl" style="display:flex;align-items:center;gap:7px;cursor:pointer">
+        <input type="checkbox" id="con" style="width:auto;accent-color:#6E9CC9"> Apply payout
+      </label>
+      <div class="note" style="margin-top:6px">Set per channel. Uncheck to see the same order unattributed.</div>
+    </div>
+    <div id="payoutFields"></div>
+
+    <span class="lbl" style="margin:16px 0 9px">Targets and bulk</span>
+    <div class="field"><label class="lbl" for="tm">Target net margin (<span id="tmVal"></span>%)</label>
+      <input type="range" min="0" max="45" step="1" id="tm"></div>
+    <div class="field"><label class="lbl" for="dp">Bulk discount % (0 = off)</label>
+      <input type="number" step="1" min="0" id="dp"></div>
+    <div class="field"><label class="lbl" for="dq">Discount applies at qty &ge;</label>
+      <input type="number" step="1" min="1" id="dq"></div>
+
+    <div class="hr"></div>
+
+    <span class="lbl" style="margin-bottom:8px">Snapshot</span>
+    <div class="note">Captures every input above so partners open the exact same model.</div>
+    <div class="snapbtns">
+      <button class="chip" id="copyLink">Copy link</button>
+      <button class="chip" id="copyCode">Copy code</button>
+      <button class="chip" id="resetAll">Reset</button>
+    </div>
+    <div class="field">
+      <label class="lbl" for="loadCode">Paste a snapshot code</label>
+      <textarea id="loadCode" rows="2" placeholder="paste here, then Load"></textarea>
+      <button class="chip" id="loadBtn" style="margin-top:6px;width:100%">Load snapshot</button>
+    </div>
+    <div class="note" id="snapMsg" style="min-height:16px;color:#6FBFA2"></div>
+  </div>
+
+  <!-- ================= MAIN ================= -->
+  <div>
+    <div class="panel">
+      <div class="hero" id="hero"></div>
+      <div class="sect">
+        <span class="lbl" id="stackTitle"></span>
+        <span class="lbl" style="letter-spacing:.08em">click a row to focus</span>
+      </div>
+      <div id="stacks"></div>
+      <div class="legend">
+        <div class="lgi"><span class="sw" style="background:#C9B78E"></span>Blank + DTG print</div>
+        <div class="lgi"><span class="sw" style="background:#6E9CC9"></span>Printful shipping</div>
+        <div class="lgi"><span class="sw" style="background:#8E4A52"></span>Channel fee</div>
+        <div class="lgi"><span class="sw" style="background:#A66B3F"></span>Affiliate / creator payout</div>
+        <div class="lgi"><span class="sw" style="background:#55AC8E"></span>Net profit</div>
+        <div class="lgi"><span class="sw" style="background:#C9584F"></span>Loss</div>
+      </div>
+      <div id="cliff"></div>
+    </div>
+
+    <div class="panel" style="margin-top:14px">
+      <div class="sect">
+        <span class="lbl" id="chartTitle"></span>
+        <div style="display:flex;gap:5px">
+          <button class="chip" id="modeUnit">Per tee</button>
+          <button class="chip" id="modeTotal">Per order</button>
+        </div>
+      </div>
+      <div id="chart"></div>
+      <div class="legend" id="chartLegend"></div>
+    </div>
+
+    <div class="panel" style="margin-top:14px">
+      <div class="sect">
+        <span class="lbl" id="threshTitle"></span>
+        <span class="lbl" id="threshTarget"></span>
+      </div>
+      <div class="note">Net margin if you absorb the full Printful shipping cost at each cart size.</div>
+      <div class="scan" id="scan"></div>
+      <div id="threshVerdict"></div>
+    </div>
+
+    <div class="panel" style="margin-top:14px">
+      <span class="lbl" style="margin-bottom:10px" id="tableTitle"></span>
+      <div class="scroll"><table>
+        <thead><tr>
+          <th>Order</th><th>Cart</th><th>Blank + print</th><th>Ship charged</th>
+          <th>Ship cost</th><th>Ship P / L</th><th>Channel fee</th><th>Payout</th>
+          <th>Net</th><th>Margin</th><th>Per tee</th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+      </table></div>
+      <div class="note" style="margin-top:10px">
+        Colors read from your P&amp;L, not the customer's. A <span class="badge paid" style="margin:0">Paid ship</span>
+        row means the customer covered shipping. A <span class="badge free" style="margin:0">Free ship</span> row
+        means you absorbed the full Printful cost. The Printful cost is deducted from net on every row either way.
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:14px">
+      <span class="lbl" style="margin-bottom:10px">Changed from baseline</span>
+      <div class="diff" id="diff"></div>
+    </div>
+
+    <div class="foot" id="foot"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+var QTYS=[1,2,3,5,10,15,25,40,100];
+
+var CHANNELS={
+  shopify:{id:"shopify",label:"Shopify DTC",fixed:0.30,tiered:false,payout:"affiliate",
+    rate:function(){return 2.9;},
+    note:"2.9% + $0.30 card processing. Confident."},
+  amazon:{id:"amazon",label:"Amazon",fixed:0,tiered:true,payout:null,
+    rate:function(p){return p<=15?5:(p<=20?10:17);},
+    note:"Tiered apparel referral: 5% at or under $15, 10% from $15.01 to $20.00, 17% above $20.00. VERIFY in Seller Central. No creator payout on this channel."},
+  ebay:{id:"ebay",label:"eBay",fixed:0.30,tiered:false,payout:null,
+    rate:function(){return 13.25;},
+    note:"13.25% + $0.30 per order for apparel. VERIFY against your actual rate. No creator payout on this channel."},
+  tiktok:{id:"tiktok",label:"TikTok Shop",fixed:0,tiered:false,payout:"creator",
+    rate:function(){return 8;},
+    note:"8% platform fee, on top of the creator payout. LOW CONFIDENCE, confirm this."}
+};
+var CIDS=["shopify","amazon","ebay","tiktok"];
+var CHAN_COLOR={shopify:"#55AC8E",amazon:"#C9B78E",ebay:"#6E9CC9",tiktok:"#C9584F"};
+var C={blank:"#C9B78E",ship:"#6E9CC9",fee:"#8E4A52",comm:"#A66B3F",net:"#55AC8E",loss:"#C9584F"};
+
+var DEFAULTS={
+  price:20, cost:9.95, sf:4.75, sa:2.20, sc:4.95, th:40,
+  ch:"shopify", con:true,
+  cr:{shopify:15,amazon:0,ebay:0,tiktok:20},
+  fo:{}, tm:20, dp:0, dq:25, cm:"perUnit", fq:1
+};
+
+var S=clone(DEFAULTS);
+
+function clone(o){return JSON.parse(JSON.stringify(o));}
+function money(n){return (n<0?"-$":"$")+Math.abs(n).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});}
+function pct(n){return (n*100).toFixed(1)+"%";}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
+
+function feeRate(cid,unitPrice){
+  var o=S.fo[cid];
+  if(o!==undefined&&o!==null&&o!=="") return Number(o);
+  return CHANNELS[cid].rate(unitPrice);
+}
+
+function calc(q,cid,forceFree){
+  var unitPrice=(S.dp>0&&q>=S.dq)?S.price*(1-S.dp/100):S.price;
+  var sub=unitPrice*q;
+  var free=forceFree===true||sub>=S.th;
+  var shipCharged=free?0:S.sc;
+  var cart=sub+shipCharged;
+  var blank=S.cost*q;
+  var shipCost=S.sf+S.sa*Math.max(0,q-1);
+  var rate=feeRate(cid,unitPrice);
+  var fee=cart*(rate/100)+CHANNELS[cid].fixed;
+  var payout=(S.con&&CHANNELS[cid].payout)?sub*((S.cr[cid]||0)/100):0;
+  var totalCost=blank+shipCost+fee+payout;
+  var net=cart-totalCost;
+  return {q:q,unitPrice:unitPrice,sub:sub,shipCharged:shipCharged,cart:cart,blank:blank,
+    shipCost:shipCost,shipPerUnit:shipCost/q,shipPL:shipCharged-shipCost,fee:fee,rate:rate,
+    payout:payout,totalCost:totalCost,net:net,
+    margin:cart>0?net/cart:0,perUnit:net/q,free:free};
+}
+
+/* ---------------- snapshot ---------------- */
+function encode(){
+  var payload={p:S.price,c:S.cost,sf:S.sf,sa:S.sa,sc:S.sc,th:S.th,ch:S.ch,
+    con:S.con?1:0,cr:S.cr,fo:S.fo,tm:S.tm,dp:S.dp,dq:S.dq,cm:S.cm,fq:S.fq};
+  var b=btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+  return b.replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+}
+function decode(code){
+  try{
+    var b=code.trim().replace(/^#?s=/,"").replace(/-/g,"+").replace(/_/g,"/");
+    while(b.length%4)b+="=";
+    var o=JSON.parse(decodeURIComponent(escape(atob(b))));
+    S.price=+o.p; S.cost=+o.c; S.sf=+o.sf; S.sa=+o.sa; S.sc=+o.sc; S.th=+o.th;
+    S.ch=CHANNELS[o.ch]?o.ch:"shopify"; S.con=!!o.con;
+    S.cr=Object.assign(clone(DEFAULTS.cr),o.cr||{});
+    S.fo=o.fo||{}; S.tm=+o.tm; S.dp=+o.dp; S.dq=+o.dq;
+    S.cm=o.cm==="total"?"total":"perUnit"; S.fq=+o.fq||1;
+    return true;
+  }catch(e){return false;}
+}
+function diffList(){
+  var d=[],L;
+  function add(label,from,to){d.push({label:label,from:from,to:to});}
+  if(S.price!==DEFAULTS.price) add("Retail price",money(DEFAULTS.price),money(S.price));
+  if(S.cost!==DEFAULTS.cost) add("Product cost",money(DEFAULTS.cost),money(S.cost));
+  if(S.sf!==DEFAULTS.sf) add("Ship, first item",money(DEFAULTS.sf),money(S.sf));
+  if(S.sa!==DEFAULTS.sa) add("Ship, each additional",money(DEFAULTS.sa),money(S.sa));
+  if(S.sc!==DEFAULTS.sc) add("Shipping charged",money(DEFAULTS.sc),money(S.sc));
+  if(S.th!==DEFAULTS.th) add("Free shipping threshold",money(DEFAULTS.th),money(S.th));
+  if(S.con!==DEFAULTS.con) add("Payouts applied",DEFAULTS.con?"yes":"no",S.con?"yes":"no");
+  CIDS.forEach(function(cid){
+    if(CHANNELS[cid].payout&&S.cr[cid]!==DEFAULTS.cr[cid])
+      add(CHANNELS[cid].label+" "+CHANNELS[cid].payout,DEFAULTS.cr[cid]+"%",S.cr[cid]+"%");
+    var o=S.fo[cid];
+    if(o!==undefined&&o!==null&&o!=="")
+      add(CHANNELS[cid].label+" fee","auto "+CHANNELS[cid].rate(S.price)+"%",Number(o)+"%");
+  });
+  if(S.tm!==DEFAULTS.tm) add("Target margin",DEFAULTS.tm+"%",S.tm+"%");
+  if(S.dp!==DEFAULTS.dp) add("Bulk discount",DEFAULTS.dp+"%",S.dp+"%");
+  if(S.dp>0&&S.dq!==DEFAULTS.dq) add("Discount min qty",DEFAULTS.dq,S.dq);
+  return d;
+}
+
+/* ---------------- chart ---------------- */
+function chartSVG(){
+  var W=760,H=250,PL=62,PR=14,PT=10,PB=34;
+  var series={};
+  CIDS.forEach(function(cid){
+    series[cid]=QTYS.map(function(q){var r=calc(q,cid);return S.cm==="perUnit"?r.perUnit:r.net;});
+  });
+  var all=[0];
+  CIDS.forEach(function(cid){all=all.concat(series[cid]);});
+  var mn=Math.min.apply(null,all),mx=Math.max.apply(null,all);
+  if(mx===mn){mx=mn+1;}
+  var pad=(mx-mn)*0.08; mn-=pad; mx+=pad;
+  var x=function(i){return PL+i*((W-PL-PR)/(QTYS.length-1));};
+  var y=function(v){return PT+(1-(v-mn)/(mx-mn))*(H-PT-PB);};
+  var s='<svg viewBox="0 0 '+W+' '+H+'" width="100%" height="250" role="img" aria-label="Profit by order size">';
+  var ticks=5,i,tv,ty;
+  for(i=0;i<=ticks;i++){
+    tv=mn+(mx-mn)*i/ticks; ty=y(tv);
+    s+='<line x1="'+PL+'" y1="'+ty+'" x2="'+(W-PR)+'" y2="'+ty+'" stroke="#3D434C" stroke-dasharray="2 4"/>';
+    s+='<text x="'+(PL-8)+'" y="'+(ty+4)+'" fill="#9AA2AE" font-size="11" text-anchor="end" font-family="IBM Plex Mono,monospace">$'+tv.toFixed(0)+'</text>';
+  }
+  if(mn<0&&mx>0){s+='<line x1="'+PL+'" y1="'+y(0)+'" x2="'+(W-PR)+'" y2="'+y(0)+'" stroke="#C9584F" stroke-width="1"/>';}
+  QTYS.forEach(function(q,i){
+    s+='<text x="'+x(i)+'" y="'+(H-PB+18)+'" fill="#9AA2AE" font-size="11" text-anchor="middle" font-family="IBM Plex Mono,monospace">'+q+'</text>';
+  });
+  s+='<text x="'+((PL+W-PR)/2)+'" y="'+(H-4)+'" fill="#9AA2AE" font-size="10" text-anchor="middle" letter-spacing="1.5" font-family="Barlow Condensed,sans-serif">TEES PER ORDER</text>';
+  CIDS.forEach(function(cid){
+    var on=cid===S.ch;
+    var pts=series[cid].map(function(v,i){return x(i)+","+y(v);}).join(" ");
+    s+='<polyline points="'+pts+'" fill="none" stroke="'+CHAN_COLOR[cid]+'" stroke-width="'+(on?2.6:1.2)+'" opacity="'+(on?1:.45)+'"/>';
+    series[cid].forEach(function(v,i){
+      s+='<circle cx="'+x(i)+'" cy="'+y(v)+'" r="'+(on?3.5:2)+'" fill="'+CHAN_COLOR[cid]+'" opacity="'+(on?1:.45)+'"><title>'+CHANNELS[cid].label+' at '+QTYS[i]+': '+money(v)+'</title></circle>';
+    });
+  });
+  return s+'</svg>';
+}
+
+/* ---------------- render ---------------- */
+function render(){
+  var ch=CHANNELS[S.ch];
+  var rows=QTYS.map(function(q){return calc(q,S.ch);});
+  var focus=rows.filter(function(r){return r.q===S.fq;})[0]||rows[0];
+
+  // controls that reflect state
+  document.getElementById("chanBtns").innerHTML=CIDS.map(function(cid){
+    return '<button class="chip" data-chan="'+cid+'" aria-pressed="'+(cid===S.ch)+'">'+CHANNELS[cid].label+'</button>';
+  }).join("");
+  document.getElementById("chanNote").textContent=ch.note;
+  var fr=document.getElementById("feeRate");
+  if(document.activeElement!==fr) fr.value=(S.fo[S.ch]!==undefined&&S.fo[S.ch]!=="")?S.fo[S.ch]:ch.rate(S.price);
+  document.getElementById("feeReset").hidden=!(S.fo[S.ch]!==undefined&&S.fo[S.ch]!=="");
+  document.getElementById("feeAuto").hidden=!(ch.tiered&&(S.fo[S.ch]===undefined||S.fo[S.ch]===""));
+
+  document.getElementById("payoutFields").innerHTML=CIDS.map(function(cid){
+    var c=CHANNELS[cid];
+    return '<div class="field"><label class="lbl" style="opacity:'+(c.payout?1:.5)+'">'+
+      c.label+' &middot; '+(c.payout?c.payout+" %":"no payout")+'</label>'+
+      '<input type="number" step="1" min="0" data-payout="'+cid+'" value="'+(c.payout?S.cr[cid]:0)+'"'+
+      ((!c.payout||!S.con)?" disabled":"")+'></div>';
+  }).join("");
+
+  document.getElementById("tmVal").textContent=S.tm;
+  document.getElementById("modeUnit").setAttribute("aria-pressed",S.cm==="perUnit");
+  document.getElementById("modeTotal").setAttribute("aria-pressed",S.cm==="total");
+
+  // hero
+  document.getElementById("hero").innerHTML=
+    stat("Net profit per tee &middot; order of "+focus.q,money(focus.perUnit),focus.perUnit>=0?"#55AC8E":"#C9584F",true)+
+    stat("Net margin",pct(focus.margin),focus.margin>=0?"#EDE5CE":"#C9584F")+
+    stat("Order profit",money(focus.net),"#EDE5CE")+
+    stat("Shipping per tee",money(focus.shipPerUnit),"#EDE5CE")+
+    stat("Shipping P / L",money(focus.shipPL),focus.shipPL>=0?"#55AC8E":"#C9584F")+
+    stat("Cart total",money(focus.cart),"#EDE5CE");
+
+  document.getElementById("stackTitle").innerHTML="Where every dollar goes &middot; "+esc(ch.label);
+  document.getElementById("stacks").innerHTML=rows.map(function(r){
+    var denom=Math.max(r.cart,r.totalCost)||1;
+    var segs=[[r.blank,C.blank],[r.shipCost,C.ship],[r.fee,C.fee],[r.payout,C.comm],
+      r.net>=0?[r.net,C.net]:[-r.net,C.loss]];
+    return '<div class="stackrow" data-q="'+r.q+'" role="button" tabindex="0">'+
+      '<div class="qtag'+(r.q===S.fq?" on":"")+'">'+r.q+(r.q===1?" tee":" tees")+'</div>'+
+      '<div class="bar"'+(r.q===S.fq?' style="box-shadow:0 0 0 1px #6E9CC9"':'')+'>'+
+      segs.map(function(s){return '<div class="seg" style="width:'+(s[0]/denom*100)+'%;background:'+s[1]+'"></div>';}).join("")+
+      '</div><div class="num" style="font-size:13px;text-align:right;color:'+(r.perUnit>=0?"#55AC8E":"#C9584F")+'">'+
+      money(r.perUnit)+'/ea</div></div>';
+  }).join("");
+
+  var cliff=document.getElementById("cliff");
+  if(S.ch==="amazon"&&S.price>20&&(S.fo.amazon===undefined||S.fo.amazon==="")){
+    cliff.innerHTML='<div class="warn"><strong>Fee cliff.</strong> Above $20.00 the Amazon apparel referral fee jumps from 10% to 17%, about '+money(S.price*0.07)+' per tee. Pricing at $19.99 can net more than $20.99. Verify the tier boundaries in Seller Central.</div>';
+  } else cliff.innerHTML="";
+
+  document.getElementById("chartTitle").textContent=(S.cm==="perUnit"?"Profit per tee":"Total order profit")+" by order size";
+  document.getElementById("chart").innerHTML=chartSVG();
+  document.getElementById("chartLegend").innerHTML=CIDS.map(function(cid){
+    return '<div class="lgi"><span class="sw" style="background:'+CHAN_COLOR[cid]+'"></span>'+
+      '<span style="color:'+(cid===S.ch?"#EDE5CE":"#9AA2AE")+'">'+CHANNELS[cid].label+'</span></div>';
+  }).join("");
+
+  // threshold scan
+  var scan=[],firstPass=null,i;
+  for(i=1;i<=8;i++){
+    var r=calc(i,S.ch,true);
+    r.pass=r.margin*100>=S.tm;
+    if(r.pass&&!firstPass)firstPass=r;
+    scan.push(r);
+  }
+  var payLabel=(S.con&&ch.payout&&S.cr[S.ch]>0)?(S.cr[S.ch]+"% "+ch.payout):"no payout";
+  document.getElementById("threshTitle").innerHTML="Free shipping threshold &middot; "+esc(ch.label)+" &middot; "+esc(payLabel);
+  document.getElementById("threshTarget").textContent="target "+S.tm+"% net";
+  document.getElementById("scan").innerHTML=scan.map(function(r){
+    return '<div class="scancell'+(r.pass?" pass":"")+(firstPass&&r.q===firstPass.q?" first":"")+'">'+
+      '<span class="lbl" style="letter-spacing:.06em">'+r.q+(r.q===1?" tee":" tees")+'</span>'+
+      '<div class="num" style="font-size:14px;margin:5px 0 2px;color:'+(r.pass?"#55AC8E":(r.margin<0?"#C9584F":"#EDE5CE"))+'">'+pct(r.margin)+'</div>'+
+      '<div class="num" style="font-size:11px;color:#9AA2AE">'+money(r.cart)+'</div></div>';
+  }).join("");
+  document.getElementById("threshVerdict").innerHTML=firstPass
+    ? '<div class="good"><strong>Set free shipping at '+money(firstPass.cart)+'.</strong> That is '+firstPass.q+
+      (firstPass.q===1?" tee":" tees")+', the smallest cart that still clears '+S.tm+'% net on '+esc(ch.label)+
+      ' after absorbing shipping'+((S.con&&ch.payout&&S.cr[S.ch]>0)?' and paying the '+S.cr[S.ch]+'% '+ch.payout:'')+
+      '. Net there is '+money(firstPass.net)+' on the order, '+money(firstPass.perUnit)+' per tee.</div>'
+    : '<div class="warn"><strong>No cart size up to 8 tees clears '+S.tm+'%</strong> on '+esc(ch.label)+
+      ' with these inputs. Raise the price, cut the '+(ch.payout||"fee")+' rate, drop the target, or stop offering free shipping on this channel.</div>';
+
+  // table
+  document.getElementById("tableTitle").innerHTML="Scenario detail &middot; "+esc(ch.label);
+  document.getElementById("tbody").innerHTML=rows.map(function(r){
+    return '<tr data-q="'+r.q+'"'+(r.q===S.fq?' class="sel"':'')+'>'+
+      '<td style="font-family:Barlow Condensed,sans-serif;letter-spacing:.05em">'+r.q+(r.q===1?" tee":" tees")+
+      '<span class="badge '+(r.free?"free":"paid")+'">'+(r.free?"Free ship":"Paid ship")+'</span></td>'+
+      '<td>'+money(r.cart)+'</td>'+
+      '<td style="color:#C9B78E">'+money(r.blank)+'</td>'+
+      '<td style="color:'+(r.shipCharged>0?"#EDE5CE":"#6E7681")+'">'+money(r.shipCharged)+'</td>'+
+      '<td style="color:#6E9CC9">'+money(r.shipCost)+'<span style="color:#7C8695;font-size:11px"> / '+money(r.shipPerUnit)+'ea</span></td>'+
+      '<td style="color:'+(r.shipPL>=0?"#55AC8E":"#C9584F")+'">'+money(r.shipPL)+'</td>'+
+      '<td style="color:#B9727A">'+money(r.fee)+'</td>'+
+      '<td style="color:'+(r.payout>0?"#C08B5C":"#6E7681")+'">'+money(r.payout)+'</td>'+
+      '<td style="color:'+(r.net>=0?"#55AC8E":"#C9584F")+';font-weight:600">'+money(r.net)+'</td>'+
+      '<td style="color:'+(r.margin>=0?"#EDE5CE":"#C9584F")+'">'+pct(r.margin)+'</td>'+
+      '<td style="color:'+(r.perUnit>=0?"#55AC8E":"#C9584F")+'">'+money(r.perUnit)+'</td></tr>';
+  }).join("");
+
+  // diff
+  var d=diffList();
+  document.getElementById("diff").innerHTML=d.length
+    ? d.map(function(x){return '<div>'+esc(x.label)+': <span class="from">'+esc(x.from)+'</span> &rarr; <span class="to">'+esc(x.to)+'</span></div>';}).join("")
+    : '<div class="note">Nothing changed. This is the baseline model.</div>';
+
+  document.getElementById("foot").innerHTML=
+    '<strong style="color:#EDE5CE">Assumptions.</strong> Printful USA shirt shipping ('+money(S.sf)+
+    ' first item, '+money(S.sa)+' each additional) is from Printful\u2019s published rate table and is the one number here with high confidence. '+
+    'Channel fees are defaults you should verify: the Amazon tier boundaries, the eBay final value rate, and especially the TikTok Shop platform fee, which is low confidence. '+
+    'Payouts are set per channel; Shopify carries an affiliate rate, TikTok Shop a creator rate, Amazon and eBay none. '+
+    'Channel fees apply to the cart total including any shipping charged; payouts apply to the product subtotal only and assume every order on that channel is attributed. '+
+    'Printful\u2019s Growth plan discount is not modeled, so lower the product cost input to test it. Returns, chargebacks, ad spend, and Amazon\u2019s minimum referral fee are excluded.';
+
+  history.replaceState(null,"","#s="+encode());
+}
+function stat(label,val,color,big){
+  return '<div><span class="lbl">'+label+'</span><div class="'+(big?"big":"mid")+'" style="color:'+color+'">'+val+'</div></div>';
+}
+
+/* ---------------- events ---------------- */
+function num(id,key){
+  var el=document.getElementById(id);
+  el.addEventListener("input",function(){S[key]=Number(el.value)||0;render();});
+}
+document.addEventListener("click",function(e){
+  var t=e.target.closest("[data-chan]");
+  if(t){S.ch=t.getAttribute("data-chan");render();return;}
+  var q=e.target.closest("[data-q]");
+  if(q){S.fq=Number(q.getAttribute("data-q"));render();return;}
+});
+document.addEventListener("keydown",function(e){
+  if(e.key!=="Enter"&&e.key!==" ")return;
+  var q=e.target.closest(".stackrow[data-q]");
+  if(q){e.preventDefault();S.fq=Number(q.getAttribute("data-q"));render();}
+});
+document.addEventListener("input",function(e){
+  var p=e.target.getAttribute&&e.target.getAttribute("data-payout");
+  if(p){S.cr[p]=Number(e.target.value)||0;render();}
+});
+["price","cost","sf","sa","sc","th","dp","dq"].forEach(function(k){num(k,k);});
+document.getElementById("tm").addEventListener("input",function(){S.tm=Number(this.value);render();});
+document.getElementById("con").addEventListener("change",function(){S.con=this.checked;render();});
+document.getElementById("feeRate").addEventListener("input",function(){S.fo[S.ch]=this.value;render();});
+document.getElementById("feeReset").addEventListener("click",function(){delete S.fo[S.ch];render();});
+document.getElementById("modeUnit").addEventListener("click",function(){S.cm="perUnit";render();});
+document.getElementById("modeTotal").addEventListener("click",function(){S.cm="total";render();});
+
+function msg(t){var m=document.getElementById("snapMsg");m.textContent=t;setTimeout(function(){m.textContent="";},2600);}
+function copy(text,label){
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(function(){msg(label+" copied");},function(){fallback(text,label);});
+  } else fallback(text,label);
+}
+function fallback(text,label){
+  var ta=document.createElement("textarea");ta.value=text;document.body.appendChild(ta);ta.select();
+  try{document.execCommand("copy");msg(label+" copied");}catch(e){msg("Copy failed, select manually");}
+  document.body.removeChild(ta);
+}
+document.getElementById("copyLink").addEventListener("click",function(){
+  copy(location.origin+location.pathname+"#s="+encode(),"Link");
+});
+document.getElementById("copyCode").addEventListener("click",function(){copy(encode(),"Code");});
+document.getElementById("loadBtn").addEventListener("click",function(){
+  var v=document.getElementById("loadCode").value;
+  if(!v.trim()){msg("Paste a code first");return;}
+  if(decode(v)){syncInputs();render();msg("Snapshot loaded");}else{msg("Could not read that code");}
+});
+document.getElementById("resetAll").addEventListener("click",function(){
+  S=clone(DEFAULTS);syncInputs();render();msg("Reset to baseline");
+});
+function syncInputs(){
+  document.getElementById("price").value=S.price;
+  document.getElementById("cost").value=S.cost;
+  document.getElementById("sf").value=S.sf;
+  document.getElementById("sa").value=S.sa;
+  document.getElementById("sc").value=S.sc;
+  document.getElementById("th").value=S.th;
+  document.getElementById("tm").value=S.tm;
+  document.getElementById("dp").value=S.dp;
+  document.getElementById("dq").value=S.dq;
+  document.getElementById("con").checked=S.con;
+}
+
+if(location.hash&&location.hash.indexOf("s=")>-1){decode(location.hash);}
+syncInputs();
+render();
+})();
+</script>
+</body>
+</html>

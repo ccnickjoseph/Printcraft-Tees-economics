@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>CFT Unit Economics</title>
+<title>Printcraft Tees | Unit Economics</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
@@ -107,7 +107,7 @@ tbody tr.sel td{background:rgba(110,156,201,.09);}
 
 <div class="tag">
   <div class="tagline">Unit Economics</div>
-  <div class="tagsub">Casual Friday Tees &middot; Gildan G64000 &middot; DTG by Printful &middot; made to order</div>
+  <div class="tagsub">Printcraft Tees &middot; Gildan G64000 &middot; DTG by Printful &middot; made to order</div>
 </div>
 
 <div class="grid">
@@ -272,9 +272,16 @@ var C={blank:"#C9B78E",ship:"#6E9CC9",fee:"#8E4A52",comm:"#A66B3F",net:"#55AC8E"
 var DEFAULTS={
   price:20, cost:9.95, sf:4.75, sa:2.20, sc:4.95, th:70,
   ch:"shopify", con:true,
-  cr:{shopify:15,amazon:0,ebay:0,tiktok:20},
-  fo:{}, tm:20, dp:0, dq:25, cm:"perUnit", fq:1
+  cr:{shopify:15,amazon:0,ebay:0,tiktok:15},
+  fo:{}, tm:12, dp:0, dq:25, cm:"perUnit", fq:1
 };
+
+// Used for Copy link when the page is not served over http(s), e.g. previewed in a sandbox.
+var BASE="https://ccnickjoseph.github.io/Printcraft-Tees-economics/";
+function baseUrl(){
+  return (location.protocol==="http:"||location.protocol==="https:")
+    ? location.origin+location.pathname : BASE;
+}
 
 var S=clone(DEFAULTS);
 
@@ -507,7 +514,8 @@ function render(){
     'Channel fees apply to the cart total including any shipping charged; payouts apply to the product subtotal only and assume every order on that channel is attributed. '+
     'Printful\u2019s Growth plan discount is not modeled, so lower the product cost input to test it. Returns, chargebacks, ad spend, and Amazon\u2019s minimum referral fee are excluded.';
 
-  history.replaceState(null,"","#s="+encode());
+  // Sandboxed previews (about:srcdoc) reject replaceState. Harmless, so ignore it.
+  try{ history.replaceState(null,"","#s="+encode()); }catch(e){}
 }
 function stat(label,val,color,big){
   return '<div><span class="lbl">'+label+'</span><div class="'+(big?"big":"mid")+'" style="color:'+color+'">'+val+'</div></div>';
@@ -553,7 +561,7 @@ function fallback(text,label){
   document.body.removeChild(ta);
 }
 document.getElementById("copyLink").addEventListener("click",function(){
-  copy(location.origin+location.pathname+"#s="+encode(),"Link");
+  copy(baseUrl()+"#s="+encode(),"Link");
 });
 document.getElementById("copyCode").addEventListener("click",function(){copy(encode(),"Code");});
 document.getElementById("loadBtn").addEventListener("click",function(){

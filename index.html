@@ -138,8 +138,10 @@ tbody tr.sel td{background:rgba(110,156,201,.09);}
     <span class="lbl" style="margin:16px 0 9px">Shipping policy</span>
     <div class="field"><label class="lbl" for="th">Free shipping over ($)</label>
       <input type="number" step="5" id="th"></div>
-    <div class="field"><label class="lbl" for="sc">Shipping charged below it</label>
-      <input type="number" step="0.5" id="sc"></div>
+    <div class="field"><label class="lbl" for="sc">Flat fee we charge under threshold</label>
+      <input type="number" step="0.5" id="sc">
+      <div class="note" style="margin-top:4px">What the customer pays for shipping when their
+        cart is below the threshold. One flat fee regardless of quantity.</div></div>
 
     <span class="lbl" style="margin:16px 0 9px">Affiliate / creator payout</span>
     <div class="field">
@@ -268,7 +270,7 @@ var CHAN_COLOR={shopify:"#55AC8E",amazon:"#C9B78E",ebay:"#6E9CC9",tiktok:"#C9584
 var C={blank:"#C9B78E",ship:"#6E9CC9",fee:"#8E4A52",comm:"#A66B3F",net:"#55AC8E",loss:"#C9584F"};
 
 var DEFAULTS={
-  price:20, cost:9.95, sf:4.75, sa:2.20, sc:4.95, th:40,
+  price:20, cost:9.95, sf:4.75, sa:2.20, sc:4.95, th:70,
   ch:"shopify", con:true,
   cr:{shopify:15,amazon:0,ebay:0,tiktok:20},
   fo:{}, tm:20, dp:0, dq:25, cm:"perUnit", fq:1

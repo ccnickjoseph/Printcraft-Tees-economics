@@ -119,6 +119,32 @@ tbody tr.sel td{background:rgba(110,156,201,.09);}
 .diff .to{color:var(--cornsilk);}
 .snapbtns{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0;}
 .solvebar{display:flex;gap:9px;align-items:flex-end;margin:11px 0 4px;flex-wrap:wrap;}
+/* Which numbers are yours to set and which came from a source. The border is
+   the whole signal - a non-technical reader should not have to read a legend
+   twice to know whether a field is safe to change. */
+input.src-you,select.src-you{border-left:3px solid var(--jade);}
+input.src-data,select.src-data{border-left:3px solid var(--sand);}
+.srckey{display:flex;gap:14px;flex-wrap:wrap;margin:8px 0 4px;}
+.srckey span{font-size:11px;color:var(--ice);display:flex;align-items:center;gap:6px;}
+.srckey i{width:3px;height:12px;display:inline-block;border-radius:1px;}
+.steps{display:grid;gap:9px;margin-top:12px;counter-reset:step;}
+.step{display:grid;grid-template-columns:22px 1fr;gap:11px;align-items:start;}
+.step .n{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#16202B;background:var(--blue);
+  border-radius:2px;text-align:center;line-height:19px;height:19px;font-weight:600;}
+.step .t{font-size:12.5px;color:var(--cornsilk);line-height:1.55;}
+.step .t b{font-family:'Barlow Condensed','Arial Narrow',sans-serif;text-transform:uppercase;
+  letter-spacing:.1em;font-size:12px;color:var(--cornsilk);}
+.step .t span{color:var(--ice);}
+.todo{display:grid;gap:7px;margin-top:11px;}
+.todoitem{display:grid;grid-template-columns:112px 1fr;gap:12px;align-items:baseline;
+  border-top:1px solid var(--rule);padding-top:7px;}
+.todoitem:first-child{border-top:none;padding-top:0;}
+.todoitem .what{font-size:12px;color:var(--cornsilk);line-height:1.5;}
+.todoitem .what em{color:var(--ice);font-style:normal;}
+.badge.warnb{background:rgba(201,88,79,.16);color:#D9827A;border:1px solid rgba(201,88,79,.42);
+  margin:0;justify-self:start;white-space:nowrap;}
+.badge.estb{background:rgba(201,183,142,.15);color:#D6C79B;border:1px solid rgba(201,183,142,.45);
+  margin:0;justify-self:start;white-space:nowrap;}
 .solvebar .field{margin:0;flex:0 0 110px;}
 .solvebar .chip{padding:7px 14px;}
 .hr{height:1px;background:var(--rule);margin:16px 0;}
@@ -143,11 +169,12 @@ tbody tr.sel td{background:rgba(110,156,201,.09);}
   <div class="panel">
     <span class="lbl" style="margin-bottom:10px">Sales channel</span>
     <div class="chanrow" id="chanBtns"></div>
-    <div class="note" id="chanNote" style="margin:8px 0 16px"></div>
+    <div class="note" id="chanNote" style="margin:8px 0 6px"></div>
+      <div class="note" id="feeConf" style="margin:0 0 16px" hidden></div>
 
     <div class="field">
       <label class="lbl" for="feeRate">Channel fee %</label>
-      <input type="number" step="0.05" id="feeRate">
+      <input type="number" step="0.05" class="src-data" id="feeRate">
       <button class="linkbtn" id="feeReset" hidden>Reset to default</button>
       <div class="note" id="feeAuto" style="margin-top:4px" hidden>Auto-tiered from unit price</div>
     </div>
@@ -155,36 +182,36 @@ tbody tr.sel td{background:rgba(110,156,201,.09);}
     <span class="lbl" style="margin:16px 0 9px">Price and cost</span>
     <div class="field">
       <label class="lbl" for="price">Retail price</label>
-      <input type="number" step="0.5" id="price">
+      <input type="number" step="0.5" class="src-you" id="price">
       <div class="note" id="priceFlag" style="margin-top:4px" hidden></div>
     </div>
     <div class="field">
       <label class="lbl" for="cost">Printful cost (blank + DTG)</label>
-      <input type="number" step="0.01" id="cost">
+      <input type="number" step="0.01" class="src-data" id="cost">
       <div class="note" style="margin-top:4px">From the Notion blanks database.</div>
     </div>
     <div class="field">
       <label class="lbl" for="sizeBand">Size band</label>
-      <select id="sizeBand">
+      <select class="src-you" id="sizeBand">
         <option value="sxl">S to XL (base cost)</option>
         <option value="xxl">2XL (adds uplift)</option>
       </select>
     </div>
     <div class="field">
       <label class="lbl" for="xlUp">2XL cost uplift</label>
-      <input type="number" step="0.25" id="xlUp">
+      <input type="number" step="0.25" class="src-data" id="xlUp">
     </div>
 
     <span class="lbl" style="margin:16px 0 9px">What Printful charges us</span>
     <div class="field"><label class="lbl" for="sf">Ship cost: first item</label>
-      <input type="number" step="0.05" id="sf"></div>
+      <input type="number" step="0.05" class="src-data" id="sf"></div>
     <div class="field"><label class="lbl" for="sa">Ship cost: each additional</label>
-      <input type="number" step="0.05" id="sa"></div>
+      <input type="number" step="0.05" class="src-data" id="sa"></div>
 
     <span class="lbl" style="margin:16px 0 9px">What we charge the customer</span>
     <div class="field">
       <label class="lbl" for="shipMode">Shipping charge method</label>
-      <select id="shipMode">
+      <select class="src-you" id="shipMode">
         <option value="pass">Pass through Printful cost</option>
         <option value="tiered">Custom first + additional</option>
         <option value="flat">Single flat fee</option>
@@ -192,13 +219,13 @@ tbody tr.sel td{background:rgba(110,156,201,.09);}
       <div class="note" id="shipModeNote" style="margin-top:4px"></div>
     </div>
     <div class="field" id="fldChgFirst"><label class="lbl" for="cf">Charge: first item</label>
-      <input type="number" step="0.05" id="cf"></div>
+      <input type="number" step="0.05" class="src-you" id="cf"></div>
     <div class="field" id="fldChgAdd"><label class="lbl" for="ca">Charge: each additional</label>
-      <input type="number" step="0.05" id="ca"></div>
+      <input type="number" step="0.05" class="src-you" id="ca"></div>
     <div class="field" id="fldChgFlat"><label class="lbl" for="sc">Flat fee, any quantity</label>
-      <input type="number" step="0.5" id="sc"></div>
+      <input type="number" step="0.5" class="src-you" id="sc"></div>
     <div class="field"><label class="lbl" for="th">Free shipping over ($)</label>
-      <input type="number" step="5" id="th"></div>
+      <input type="number" step="5" class="src-you" id="th"></div>
 
     <span class="lbl" style="margin:16px 0 9px">Affiliate / creator payout</span>
     <div class="field">
@@ -221,9 +248,9 @@ tbody tr.sel td{background:rgba(110,156,201,.09);}
     <div class="field"><label class="lbl" for="tm">Target net margin (<span id="tmVal"></span>%)</label>
       <input type="range" min="0" max="45" step="1" id="tm"></div>
     <div class="field"><label class="lbl" for="dp">Bulk discount % (0 = off)</label>
-      <input type="number" step="1" min="0" id="dp"></div>
+      <input type="number" step="1" min="0" class="src-you" id="dp"></div>
     <div class="field"><label class="lbl" for="dq">Discount applies at qty &ge;</label>
-      <input type="number" step="1" min="1" id="dq"></div>
+      <input type="number" step="1" min="1" class="src-you" id="dq"></div>
 
     <div class="hr"></div>
 
@@ -244,6 +271,34 @@ tbody tr.sel td{background:rgba(110,156,201,.09);}
 
   <!-- ================= MAIN ================= -->
   <div>
+    <div class="panel" style="margin-bottom:14px">
+      <div class="sect" style="margin-bottom:0">
+        <span class="lbl">Start here</span>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span class="lbl" id="guideCount" style="letter-spacing:.08em"></span>
+          <button class="toggle" id="guideToggle" aria-expanded="true">Hide</button>
+        </div>
+      </div>
+      <div id="guideBody">
+        <div class="steps">
+          <div class="step"><div class="n">1</div><div class="t"><b>Pick the shirt.</b>
+            <span>The five buttons across the top. Everything below re-reads for whichever one is selected.</span></div></div>
+          <div class="step"><div class="n">2</div><div class="t"><b>Pick where you are selling it.</b>
+            <span>Shopify, Amazon, eBay or TikTok, top left. Each one charges different fees, so the answer changes.</span></div></div>
+          <div class="step"><div class="n">3</div><div class="t"><b>Check the retail price is a real one.</b>
+            <span>A <span class="badge est" style="margin:0">placeholder</span> badge next to the price means the number was invented to have something to model. Type the real price over it before you trust anything on the page.</span></div></div>
+          <div class="step"><div class="n">4</div><div class="t"><b>Read the two answer panels.</b>
+            <span>Free shipping threshold tells you the cart size to set free shipping at. Price solver tells you the price you need to charge. Everything else on the page is the working behind those two.</span></div></div>
+          <div class="step"><div class="n">5</div><div class="t"><b>Send the link, not a screenshot.</b>
+            <span>Copy link at the bottom left puts every setting into the URL. Whoever opens it sees exactly what you saw.</span></div></div>
+        </div>
+        <div class="srckey">
+          <span><i style="background:#55AC8E"></i>Green edge &mdash; your decision to make</span>
+          <span><i style="background:#C9B78E"></i>Sand edge &mdash; comes from Printful or the sales channel, change only if the source changed</span>
+        </div>
+      </div>
+    </div>
+
     <div class="panel">
       <div class="sect" style="margin-bottom:6px">
         <span class="lbl" id="prodTitle"></span>
@@ -315,7 +370,7 @@ tbody tr.sel td{background:rgba(110,156,201,.09);}
       <div class="solvebar">
         <div class="field">
           <label class="lbl" for="sq">Order size</label>
-          <input type="number" step="1" min="1" id="sq">
+          <input type="number" step="1" min="1" class="src-you" id="sq">
         </div>
         <button class="chip" id="applyPrice">Apply this price</button>
       </div>
@@ -337,6 +392,18 @@ tbody tr.sel td{background:rgba(110,156,201,.09);}
         row means the customer covered shipping. A <span class="badge free" style="margin:0">Free ship</span> row
         means you absorbed the full Printful cost. The Printful cost is deducted on every row either way.
       </div>
+    </div>
+
+    <div class="panel" style="margin-top:14px">
+      <div class="sect">
+        <span class="lbl">Still to confirm</span>
+        <span class="lbl" id="todoCount"></span>
+      </div>
+      <div class="note">Numbers that are guesses or placeholders today. Each one makes every
+        figure that depends on it approximate. Confirming one is a research task, not a typing
+        task &mdash; the value has to be changed in the file and dated, or the next person will
+        not know it was checked.</div>
+      <div class="todo" id="todo"></div>
     </div>
 
     <div class="panel" style="margin-top:14px">
@@ -386,16 +453,16 @@ var PIDS=["g64000","g5000","g18000","g18500","g18600"];
 var SHIP={tee:{first:4.95,add:2.20},fleece:{first:8.79,add:2.50}};
 
 var CHANNELS={
-  shopify:{id:"shopify",label:"Shopify DTC",fixed:0.30,tiered:false,payout:"affiliate",
+  shopify:{id:"shopify",label:"Shopify DTC",fixed:0.30,tiered:false,payout:"affiliate",conf:"ok",
     rate:function(){return 2.9;},
     note:"2.9% + $0.30 card processing. Confident."},
-  amazon:{id:"amazon",label:"Amazon",fixed:0,tiered:true,payout:null,
+  amazon:{id:"amazon",label:"Amazon",fixed:0,tiered:true,payout:null,conf:"verify",
     rate:function(p){return p<=15?5:(p<=20?10:17);},
     note:"Tiered apparel referral: 5% at or under $15, 10% from $15.01 to $20.00, 17% above $20.00. VERIFY in Seller Central. No creator payout on this channel."},
-  ebay:{id:"ebay",label:"eBay",fixed:0.30,tiered:false,payout:null,
+  ebay:{id:"ebay",label:"eBay",fixed:0.30,tiered:false,payout:null,conf:"verify",
     rate:function(){return 13.25;},
     note:"13.25% + $0.30 per order for apparel. VERIFY against your actual rate. No creator payout on this channel."},
-  tiktok:{id:"tiktok",label:"TikTok Shop",fixed:0,tiered:false,payout:"creator",
+  tiktok:{id:"tiktok",label:"TikTok Shop",fixed:0,tiered:false,payout:"creator",conf:"low",
     rate:function(){return 8;},
     note:"8% platform fee, on top of the creator payout. LOW CONFIDENCE, confirm this."}
 };
@@ -413,7 +480,7 @@ function baseDefaults(){
     shipMode:"pass", cf:4.95, ca:2.20, sc:4.95, th:70,
     ch:"shopify", con:true, cr:{shopify:15,amazon:0,ebay:0,tiktok:15},
     chon:true, chr:{shopify:5,amazon:0,ebay:0,tiktok:0},
-    fo:{}, tm:12, dp:0, dq:25, cm:"perUnit", fq:1, sq:1, chartOpen:1, stackOpen:1
+    fo:{}, tm:12, dp:0, dq:25, cm:"perUnit", fq:1, sq:1, chartOpen:1, stackOpen:1, guideOpen:1
   };
 }
 var DEFAULTS=baseDefaults();
@@ -583,12 +650,38 @@ function solvePrice(q,targetPct){
   return {price:price,row:row,breaks:breaks};
 }
 
+/* Everything in the model that is a guess today. The checklist reads from
+   here, so retiring an item means deleting its entry - there is no second
+   place to remember to update. */
+function openItems(){
+  var out=[];
+  PIDS.forEach(function(p){
+    if(!PRODUCTS[p].pricePlaceholder)return;
+    var edited=S.prices[p]!==DEFAULTS.prices[p];
+    out.push({tag:edited?"edited":"placeholder",warn:!edited,
+      what:PRODUCTS[p].style+" "+PRODUCTS[p].name+" retail price",
+      why:edited?"You changed it to "+money(S.prices[p])+" this session. That does not stick - reload and it is back to the invented "+money(DEFAULTS.prices[p])+"."
+                :"Invented, not a live price. The price solver returns the number this should be."});
+  });
+  CIDS.forEach(function(cid){
+    var c=CHANNELS[cid];
+    if(c.conf==="ok")return;
+    out.push({tag:c.conf==="low"?"low confidence":"unverified",warn:c.conf==="low",
+      what:c.label+" fee rate",
+      why:c.conf==="low"?"8% is a guess. It is the least certain number in the model, and the whole "+c.label+" column rests on it."
+                        :"Taken from the published rate, not from the account. Check what "+c.label+" actually charges us."});
+  });
+  out.push({tag:"open question",warn:false,what:"Printful plan pricing",
+    why:"Whether the blank costs are standard pricing or Growth plan pricing. If it is Growth, every cost on this page is wrong."});
+  return out;
+}
+
 /* ---------------- snapshot ---------------- */
 function encode(){
   var o={pr:S.prod,px:S.prices,cx:S.costs,bd:S.band,xu:S.xlUp,sm:S.shipMode,
     cf:S.cf,ca:S.ca,sc:S.sc,th:S.th,sf:S.shipFirst,sa:S.shipAdd,
     ch:S.ch,con:S.con?1:0,cr:S.cr,chon:S.chon?1:0,chr:S.chr,
-    fo:S.fo,tm:S.tm,dp:S.dp,dq:S.dq,cm:S.cm,fq:S.fq,sq:S.sq,co:S.chartOpen?1:0,so:S.stackOpen?1:0};
+    fo:S.fo,tm:S.tm,dp:S.dp,dq:S.dq,cm:S.cm,fq:S.fq,sq:S.sq,co:S.chartOpen?1:0,so:S.stackOpen?1:0,go:S.guideOpen?1:0};
   var b=btoa(unescape(encodeURIComponent(JSON.stringify(o))));
   return b.replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
 }
@@ -612,6 +705,7 @@ function decode(code){
     S.sq=Math.max(1,Math.round(+o.sq||1));
     S.chartOpen=o.co===undefined?1:(o.co?1:0);
     S.stackOpen=o.so===undefined?1:(o.so?1:0);
+    S.guideOpen=o.go===undefined?1:(o.go?1:0);
     return true;
   }catch(e){return false;}
 }
@@ -749,6 +843,11 @@ function render(){
     return '<button class="chip" data-chan="'+cid+'" aria-pressed="'+(cid===S.ch)+'">'+CHANNELS[cid].label+'</button>';
   }).join("");
   document.getElementById("chanNote").textContent=ch.note;
+  var fc=document.getElementById("feeConf");
+  fc.hidden=(ch.conf==="ok");
+  if(ch.conf!=="ok") fc.innerHTML='<span class="badge '+(ch.conf==="low"?"warnb":"estb")+'">'+
+    (ch.conf==="low"?"low confidence":"unverified")+'</span> '+
+    (ch.conf==="low"?"a guess, confirm before deciding anything on this channel":"check this against the actual account rate");
   var fr=document.getElementById("feeRate");
   if(document.activeElement!==fr) fr.value=(S.fo[S.ch]!==undefined&&S.fo[S.ch]!=="")?S.fo[S.ch]:ch.rate(S.prices[S.prod]);
   document.getElementById("feeReset").hidden=!(S.fo[S.ch]!==undefined&&S.fo[S.ch]!=="");
@@ -770,12 +869,12 @@ function render(){
     var c=CHANNELS[cid];
     return '<div class="field"><label class="lbl" style="opacity:'+(c.payout?1:.5)+'">'+
       c.label+' &middot; '+(c.payout?c.payout+" %":"no payout")+'</label>'+
-      '<input type="number" step="1" min="0" data-payout="'+cid+'" value="'+(c.payout?S.cr[cid]:0)+'"'+
+      '<input type="number" step="1" min="0" class="src-you" data-payout="'+cid+'" value="'+(c.payout?S.cr[cid]:0)+'"'+
       ((!c.payout||!S.con)?" disabled":"")+'></div>';
   }).join("");
   document.getElementById("charityFields").innerHTML=CIDS.map(function(cid){
     return '<div class="field"><label class="lbl">'+CHANNELS[cid].label+' &middot; giveback %</label>'+
-      '<input type="number" step="1" min="0" data-charity="'+cid+'" value="'+S.chr[cid]+'"'+
+      '<input type="number" step="1" min="0" class="src-you" data-charity="'+cid+'" value="'+S.chr[cid]+'"'+
       (!S.chon?" disabled":"")+'></div>';
   }).join("");
 
@@ -901,6 +1000,19 @@ function render(){
       '<td style="color:'+(r.perUnit>=0?"#55AC8E":"#C9584F")+'">'+money(r.perUnit)+'</td></tr>';
   }).join("");
 
+  var items=openItems();
+  document.getElementById("todoCount").textContent=items.length+" open";
+  document.getElementById("todo").innerHTML=items.map(function(it){
+    return '<div class="todoitem"><span class="badge '+(it.warn?"warnb":"estb")+'">'+esc(it.tag)+'</span>'+
+      '<div class="what">'+esc(it.what)+' &mdash; <em>'+esc(it.why)+'</em></div></div>';
+  }).join("");
+
+  document.getElementById("guideBody").style.display=S.guideOpen?"":"none";
+  document.getElementById("guideToggle").textContent=S.guideOpen?"Hide":"Show";
+  document.getElementById("guideToggle").setAttribute("aria-expanded",!!S.guideOpen);
+  document.getElementById("guideCount").textContent=
+    "5 steps \u00b7 "+items.length+" numbers still to confirm";
+
   var d=diffList();
   document.getElementById("diff").innerHTML=d.length
     ? d.map(function(x){return '<div>'+esc(x.label)+': <span class="from">'+esc(x.from)+'</span> &rarr; <span class="to">'+esc(x.to)+'</span></div>';}).join("")
@@ -971,6 +1083,7 @@ document.getElementById("modeTotal").addEventListener("click",function(){S.cm="t
 document.getElementById("modeProd").addEventListener("click",function(){S.cm="product";render();});
 document.getElementById("chartToggle").addEventListener("click",function(){S.chartOpen=S.chartOpen?0:1;render();});
 document.getElementById("stackToggle").addEventListener("click",function(){S.stackOpen=S.stackOpen?0:1;render();});
+document.getElementById("guideToggle").addEventListener("click",function(){S.guideOpen=S.guideOpen?0:1;render();});
 
 function msg(t){var m=document.getElementById("snapMsg");m.textContent=t;setTimeout(function(){m.textContent="";},2600);}
 function copy(text,label){

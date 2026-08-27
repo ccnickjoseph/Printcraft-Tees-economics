@@ -118,6 +118,9 @@ tbody tr.sel td{background:rgba(110,156,201,.09);}
 .diff .from{color:#7C8695;}
 .diff .to{color:var(--cornsilk);}
 .snapbtns{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0;}
+.solvebar{display:flex;gap:9px;align-items:flex-end;margin:11px 0 4px;flex-wrap:wrap;}
+.solvebar .field{margin:0;flex:0 0 110px;}
+.solvebar .chip{padding:7px 14px;}
 .hr{height:1px;background:var(--rule);margin:16px 0;}
 .scroll{overflow-x:auto;}
 .spec{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;margin-top:10px;}
@@ -272,6 +275,7 @@ tbody tr.sel td{background:rgba(110,156,201,.09);}
       </div>
       </div>
       <div id="cliff"></div>
+      <div id="cliffScan"></div>
     </div>
 
     <div class="panel" style="margin-top:14px">
@@ -298,6 +302,24 @@ tbody tr.sel td{background:rgba(110,156,201,.09);}
       <div class="note">Net margin if you absorb the full Printful shipping cost at each cart size.</div>
       <div class="scan" id="scan"></div>
       <div id="threshVerdict"></div>
+    </div>
+
+    <div class="panel" style="margin-top:14px">
+      <div class="sect">
+        <span class="lbl" id="solveTitle"></span>
+        <span class="lbl" id="solveTarget"></span>
+      </div>
+      <div class="note">Runs the model backwards. Pick an order size and this returns the
+        lowest retail price that still clears your target net margin at that size, on the
+        selected product and channel.</div>
+      <div class="solvebar">
+        <div class="field">
+          <label class="lbl" for="sq">Order size</label>
+          <input type="number" step="1" min="1" id="sq">
+        </div>
+        <button class="chip" id="applyPrice">Apply this price</button>
+      </div>
+      <div id="solveOut"></div>
     </div>
 
     <div class="panel" style="margin-top:14px">
@@ -391,7 +413,7 @@ function baseDefaults(){
     shipMode:"pass", cf:4.95, ca:2.20, sc:4.95, th:70,
     ch:"shopify", con:true, cr:{shopify:15,amazon:0,ebay:0,tiktok:15},
     chon:true, chr:{shopify:5,amazon:0,ebay:0,tiktok:0},
-    fo:{}, tm:12, dp:0, dq:25, cm:"perUnit", fq:1, chartOpen:1, stackOpen:1
+    fo:{}, tm:12, dp:0, dq:25, cm:"perUnit", fq:1, sq:1, chartOpen:1, stackOpen:1
   };
 }
 var DEFAULTS=baseDefaults();
@@ -426,9 +448,9 @@ function feeRate(cid,unitPrice){
   return CHANNELS[cid].rate(unitPrice);
 }
 
-function calc(q,cid,pid,forceFree){
+function calc(q,cid,pid,forceFree,priceOverride){
   pid=pid||S.prod;
-  var base=S.prices[pid]||0;
+  var base=(priceOverride===undefined||priceOverride===null)?(S.prices[pid]||0):priceOverride;
   var unitPrice=(S.dp>0&&q>=S.dq)?base*(1-S.dp/100):base;
   var sub=unitPrice*q;
   var free=forceFree===true||sub>=S.th;
@@ -458,12 +480,115 @@ function syncShipRates(){
   }
 }
 
+
+/* ---------------- cliff detector ----------------
+   A cliff is a quantity where adding one more unit makes the order worse.
+   Scans contiguous integers rather than QTYS: past 10 the ladder skips, and
+   "net(15) < net(10)" says nothing about adding a unit. Two kinds, reported
+   separately, because they do not always coincide - a fleece order at 2 units
+   earns more in total than at 1 but roughly half as much per shirt. */
+function cliffScan(){
+  var top=(S.dp>0)?Math.max(12,Math.min(60,S.dq+1)):12;
+  var list=[],prev=calc(1,S.ch),losing=prev.net<0,q;
+  for(q=2;q<=top;q++){
+    var r=calc(q,S.ch),why=[];
+    if(r.net<0) losing=true;
+    if(r.free&&!prev.free)
+      why.push("crossing the "+money(S.th)+" free shipping threshold, which stops "+money(shipCharged(q,false))+" of shipping revenue and hands you the "+money(r.sCost)+" Printful bill");
+    if(r.unitPrice<prev.unitPrice)
+      why.push("the "+S.dp+"% bulk discount starting at "+S.dq+" units");
+    if(r.rate>prev.rate)
+      why.push("the "+CHANNELS[S.ch].label+" fee rate stepping from "+prev.rate+"% to "+r.rate+"%");
+    /* Only a row that was profitable can fall off a cliff. Without this guard a
+       product priced below cost reports every single step as a cliff, which is
+       one problem repeated, not twelve findings. */
+    if(prev.net>0&&r.net<prev.net)
+      list.push({kind:"order",q:q,from:prev.net,to:r.net,why:why,recover:null});
+    if(prev.perUnit>0&&r.perUnit<prev.perUnit)
+      list.push({kind:"unit",q:q,from:prev.perUnit,to:r.perUnit,why:why});
+    prev=r;
+  }
+  var one=calc(1,S.ch);
+  /* for an order-profit cliff, how far past it you must go to earn what you
+     earned before it */
+  list.forEach(function(c){
+    if(c.kind!=="order")return;
+    for(var qq=c.q+1;qq<=top;qq++){ if(calc(qq,S.ch).net>=c.from){c.recover=qq;return;} }
+  });
+  return {top:top,list:list,losing:losing,lossAtOne:one.net<0,oneNet:one.net};
+}
+function units(q){return q+(q===1?" unit":" units");}
+function cliffHTML(){
+  var sc=cliffScan(),P=PRODUCTS[S.prod],ch=CHANNELS[S.ch],out="";
+  /* A product that loses money on its own is not a cliff problem, and saying so
+     once is more useful than flagging every step down. */
+  if(sc.lossAtOne)
+    out+='<div class="warn" style="margin-top:12px"><strong>This loses money at every order size.</strong> '+
+      'A single '+esc(P.style)+' at '+money(S.prices[S.prod])+' on '+esc(ch.label)+' nets '+money(sc.oneNet)+
+      ', and bigger orders only scale the loss. Fix the price before reading anything else on this page '+
+      '&mdash; the price solver below returns the number that clears your target.</div>';
+  else if(!sc.list.length)
+    out+='<div class="good" style="margin-top:12px"><strong>No profit cliffs.</strong> '+
+      'Through '+units(sc.top)+', every extra unit raises both order profit and per-unit profit on '+
+      esc(P.style)+' / '+esc(ch.label)+'.</div>';
+  var show=sc.list.slice(0,4);
+  out+=show.map(function(c){
+    var why=c.why.length?" The cause is "+esc(c.why.join(", plus "))+"." : "";
+    if(c.kind==="order")
+      return '<div class="warn" style="margin-top:12px"><strong>Order profit cliff at '+units(c.q)+'.</strong> '+
+        'Going from '+units(c.q-1)+' to '+units(c.q)+' drops order profit from '+money(c.from)+' to '+money(c.to)+
+        ', so the bigger order earns '+money(c.from-c.to)+' less.'+why+
+        (c.recover?' Order profit does not get back to '+money(c.from)+' until '+units(c.recover)+'.'
+                  :' It does not recover within '+units(sc.top)+'.')+'</div>';
+    return '<div class="flag" style="margin-top:12px"><strong>Per-unit cliff at '+units(c.q)+'.</strong> '+
+      'The order earns more in total, but per-unit profit falls from '+money(c.from)+' to '+money(c.to)+
+      ', down '+pct((c.from-c.to)/Math.abs(c.from||1))+'.'+why+'</div>';
+  }).join("");
+  if(sc.list.length>show.length)
+    out+='<div class="note" style="margin-top:8px">'+(sc.list.length-show.length)+
+      ' further reversal'+(sc.list.length-show.length===1?"":"s")+' past '+units(show[show.length-1].q)+
+      ' not shown.</div>';
+  return out;
+}
+
+/* ---------------- price solver ----------------
+   Margin is not monotonic in price. The free shipping threshold and the Amazon
+   fee tiers both step it down as price rises, so this scans for the lowest
+   qualifying price instead of solving algebraically, then checks the exact
+   step points above that answer to see whether it holds. */
+function solvePrice(q,targetPct){
+  var lo=null,c;
+  for(c=100;c<=30000;c+=25){                       /* coarse pass, 25 cents */
+    if(calc(q,S.ch,S.prod,false,c/100).margin*100>=targetPct){lo=c;break;}
+  }
+  if(lo===null) return {none:true};
+  var best=lo;
+  for(c=Math.max(1,lo-24);c<=lo;c++){              /* refine to the cent */
+    if(calc(q,S.ch,S.prod,false,c/100).margin*100>=targetPct){best=c;break;}
+  }
+  var price=best/100, row=calc(q,S.ch,S.prod,false,price);
+  /* the only prices where margin can step back down are exact and known, so
+     test those rather than sweeping */
+  var cands=[],tp=Math.ceil(S.th/q*100)/100;
+  if(tp>price) cands.push({p:tp,why:"the "+money(S.th)+" free shipping threshold kicks in"});
+  if(S.ch==="amazon"&&(S.fo.amazon===undefined||S.fo.amazon===""||S.fo.amazon===null)){
+    if(15.01>price) cands.push({p:15.01,why:"the Amazon referral fee steps to 10%"});
+    if(20.01>price) cands.push({p:20.01,why:"the Amazon referral fee steps to 17%"});
+  }
+  cands.sort(function(a,b){return a.p-b.p;});
+  var breaks=null;
+  for(var i=0;i<cands.length;i++){
+    if(calc(q,S.ch,S.prod,false,cands[i].p).margin*100<targetPct){breaks=cands[i];break;}
+  }
+  return {price:price,row:row,breaks:breaks};
+}
+
 /* ---------------- snapshot ---------------- */
 function encode(){
   var o={pr:S.prod,px:S.prices,cx:S.costs,bd:S.band,xu:S.xlUp,sm:S.shipMode,
     cf:S.cf,ca:S.ca,sc:S.sc,th:S.th,sf:S.shipFirst,sa:S.shipAdd,
     ch:S.ch,con:S.con?1:0,cr:S.cr,chon:S.chon?1:0,chr:S.chr,
-    fo:S.fo,tm:S.tm,dp:S.dp,dq:S.dq,cm:S.cm,fq:S.fq,co:S.chartOpen?1:0,so:S.stackOpen?1:0};
+    fo:S.fo,tm:S.tm,dp:S.dp,dq:S.dq,cm:S.cm,fq:S.fq,sq:S.sq,co:S.chartOpen?1:0,so:S.stackOpen?1:0};
   var b=btoa(unescape(encodeURIComponent(JSON.stringify(o))));
   return b.replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
 }
@@ -484,6 +609,7 @@ function decode(code){
     S.chon=!!o.chon; S.chr=Object.assign(clone(DEFAULTS.chr),o.chr||{});
     S.fo=o.fo||{}; S.tm=+o.tm; S.dp=+o.dp; S.dq=+o.dq;
     S.cm=["perUnit","total","product"].indexOf(o.cm)>-1?o.cm:"perUnit"; S.fq=+o.fq||1;
+    S.sq=Math.max(1,Math.round(+o.sq||1));
     S.chartOpen=o.co===undefined?1:(o.co?1:0);
     S.stackOpen=o.so===undefined?1:(o.so?1:0);
     return true;
@@ -528,6 +654,7 @@ function diffList(){
   if(S.tm!==DEFAULTS.tm) add("Target margin",DEFAULTS.tm+"%",S.tm+"%");
   if(S.dp!==DEFAULTS.dp) add("Bulk discount",DEFAULTS.dp+"%",S.dp+"%");
   if(S.dp>0&&S.dq!==DEFAULTS.dq) add("Discount min qty",DEFAULTS.dq,S.dq);
+  if(S.sq!==DEFAULTS.sq) add("Solver order size",DEFAULTS.sq,S.sq);
   return d;
 }
 
@@ -684,6 +811,7 @@ function render(){
   var cliff=document.getElementById("cliff");
   cliff.innerHTML=(S.ch==="amazon"&&S.prices[S.prod]>20&&(S.fo.amazon===undefined||S.fo.amazon===""))
     ? '<div class="warn"><strong>Fee cliff.</strong> Above $20.00 the Amazon apparel referral fee jumps from 10% to 17%, about '+money(S.prices[S.prod]*0.07)+' per unit. Verify the tier boundaries in Seller Central.</div>' : "";
+  document.getElementById("cliffScan").innerHTML=cliffHTML();
 
   document.getElementById("chartBody").style.display=S.chartOpen?"":"none";
   document.getElementById("chartToggle").textContent=S.chartOpen?"Hide":"Show";
@@ -725,6 +853,35 @@ function render(){
       '. Net there is '+money(firstPass.net)+' on the order, '+money(firstPass.perUnit)+' per unit.</div>'
     : '<div class="warn"><strong>No cart size up to 8 units clears '+S.tm+'%</strong> on '+esc(ch.label)+
       ' with these inputs. Raise the price, cut a payout rate, drop the target, or stop offering free shipping here.</div>';
+
+  var sq=Math.max(1,S.sq||1), sol=solvePrice(sq,S.tm);
+  document.getElementById("solveTitle").innerHTML="Price solver &middot; "+esc(P.style)+" &middot; "+esc(ch.label);
+  document.getElementById("solveTarget").textContent="target "+S.tm+"% net";
+  var cur=S.prices[S.prod], curRow=calc(sq,S.ch), ap=document.getElementById("applyPrice");
+  if(sol.none){
+    ap.hidden=true;
+    document.getElementById("solveOut").innerHTML='<div class="warn"><strong>No price up to $300 clears '+
+      S.tm+'% at '+units(sq)+'</strong> on '+esc(ch.label)+'. The payout, charity and fee rates take more '+
+      'than '+(100-S.tm)+'% of the cart no matter what you charge. Cut a payout rate, drop the target, or '+
+      'stop offering free shipping on this channel.</div>';
+  } else {
+    var delta=sol.price-cur, r=sol.row;
+    ap.hidden=(Math.abs(delta)<0.005);
+    document.getElementById("solveOut").innerHTML=
+      '<div class="'+(delta>0.005?"flag":"good")+'"><strong>'+money(sol.price)+' at '+units(sq)+'.</strong> '+
+      (Math.abs(delta)<0.005
+        ? 'That is exactly the current price.'
+        : (delta>0
+            ? 'That is '+money(delta)+' above the current '+money(cur)+', which returns '+pct(curRow.margin)+' at this order size.'
+            : 'The current '+money(cur)+' already clears the target at '+pct(curRow.margin)+'. '+money(sol.price)+' is the lowest price that still would.'))+
+      ' At '+money(sol.price)+' the order is '+money(r.cart)+', nets '+money(r.net)+' ('+pct(r.margin)+'), '+
+      money(r.perUnit)+' per unit'+(r.free?', with shipping free and '+money(r.sCost)+' of Printful cost absorbed':', with the customer paying '+money(r.charged)+' shipping')+'.'+
+      (PRODUCTS[S.prod].pricePlaceholder?' The current price is a placeholder, so treat this as the first real number for '+esc(P.style)+'.':'')+
+      '</div>'+
+      (sol.breaks?'<div class="warn" style="margin-top:9px"><strong>Only holds to '+money(sol.breaks.p-0.01)+'.</strong> '+
+        'At '+money(sol.breaks.p)+', '+esc(sol.breaks.why)+' and margin at '+units(sq)+' drops back below '+S.tm+'%. '+
+        'Price into that band and you earn less than you do at '+money(sol.breaks.p-0.01)+'.</div>':'');
+  }
 
   document.getElementById("tableTitle").innerHTML="Scenario detail &middot; "+esc(P.style)+" &middot; "+esc(ch.label);
   document.getElementById("tbody").innerHTML=rows.map(function(r){
@@ -771,12 +928,12 @@ document.addEventListener("click",function(e){
   var t=e.target.closest("[data-chan]");
   if(t){S.ch=t.getAttribute("data-chan");render();return;}
   var q=e.target.closest("[data-q]");
-  if(q){S.fq=Number(q.getAttribute("data-q"));render();return;}
+  if(q){S.fq=Number(q.getAttribute("data-q"));S.sq=S.fq;syncInputs();render();return;}
 });
 document.addEventListener("keydown",function(e){
   if(e.key!=="Enter"&&e.key!==" ")return;
   var q=e.target.closest(".stackrow[data-q]");
-  if(q){e.preventDefault();S.fq=Number(q.getAttribute("data-q"));render();}
+  if(q){e.preventDefault();S.fq=Number(q.getAttribute("data-q"));S.sq=S.fq;syncInputs();render();}
 });
 document.addEventListener("input",function(e){
   var p=e.target.getAttribute&&e.target.getAttribute("data-payout");
@@ -796,6 +953,7 @@ bind("sc",function(el){S.sc=Number(el.value)||0;});
 bind("th",function(el){S.th=Number(el.value)||0;});
 bind("dp",function(el){S.dp=Number(el.value)||0;});
 bind("dq",function(el){S.dq=Number(el.value)||1;});
+bind("sq",function(el){S.sq=Math.max(1,Math.round(Number(el.value)||1));});
 bind("tm",function(el){S.tm=Number(el.value);});
 document.getElementById("sizeBand").addEventListener("change",function(){S.band=this.value;render();});
 document.getElementById("shipMode").addEventListener("change",function(){S.shipMode=this.value;render();});
@@ -803,6 +961,11 @@ document.getElementById("con").addEventListener("change",function(){S.con=this.c
 document.getElementById("chon").addEventListener("change",function(){S.chon=this.checked;render();});
 document.getElementById("feeRate").addEventListener("input",function(){S.fo[S.ch]=this.value;render();});
 document.getElementById("feeReset").addEventListener("click",function(){delete S.fo[S.ch];render();});
+document.getElementById("applyPrice").addEventListener("click",function(){
+  var sol=solvePrice(Math.max(1,S.sq||1),S.tm);
+  if(sol.none){msg("No price clears that target");return;}
+  S.prices[S.prod]=sol.price;syncInputs();render();msg("Price set to "+money(sol.price));
+});
 document.getElementById("modeUnit").addEventListener("click",function(){S.cm="perUnit";render();});
 document.getElementById("modeTotal").addEventListener("click",function(){S.cm="total";render();});
 document.getElementById("modeProd").addEventListener("click",function(){S.cm="product";render();});
@@ -845,6 +1008,7 @@ function syncInputs(){
   document.getElementById("tm").value=S.tm;
   document.getElementById("dp").value=S.dp;
   document.getElementById("dq").value=S.dq;
+  document.getElementById("sq").value=S.sq;
   document.getElementById("con").checked=S.con;
   document.getElementById("chon").checked=S.chon;
 }
